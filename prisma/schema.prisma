@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Guild {
+  serverId    String        @id @unique
+  name        String
+  description String?
+  memberCount Int?
+  channelId   String?       @unique
+  createdAt   DateTime      @default(now())
+  serverIcon  String?
+  Tag         Tag[]
+  channels    channels[]
+  discordtags discordtags[]
+}
+
+model Tag {
+  tagId          String        @id
+  name           String
+  serverServerId String?
+  Guild          Guild?        @relation(fields: [serverServerId], references: [serverId])
+  discordtags    discordtags[]
+}
+
+model accounts {
+  id                  String  @id
+  user_id             String
+  type                String
+  provider            String
+  provider_account_id String
+  refresh_token       String?
+  access_token        String?
+  expires_at          Int?
+  token_type          String?
+  scope               String?
+  id_token            String?
+  session_state       String?
+  users               users   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([provider, provider_account_id])
+}
+
+model channels {
+  id          String  @id
+  name        String
+  description String?
+  serverId    String
+  Guild       Guild   @relation(fields: [serverId], references: [serverId], onDelete: Cascade)
+}
+
+model discordtags {
+  id       String @id
+  serverId String
+  tagId    String
+  Guild    Guild  @relation(fields: [serverId], references: [serverId], onDelete: Cascade)
+  Tag      Tag    @relation(fields: [tagId], references: [tagId], onDelete: Cascade)
+
+  @@unique([serverId, tagId])
+}
+
+model sessions {
+  id            String   @id
+  session_token String   @unique
+  user_id       String
+  expires       DateTime
+  users         users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model users {
+  id             String     @id
+  name           String?
+  email          String?    @unique
+  email_verified DateTime?
+  image          String?
+  accounts       accounts[]
+  sessions       sessions[]
+}
+
+model verificationtokens {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
