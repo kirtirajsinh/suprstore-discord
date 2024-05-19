@@ -15,7 +15,19 @@ router.get("/yo", (req, res) => {
 });
 
 router.post("/post", async (req, res) => {
-  const { channelId, title, description, url, Image, buttonDetails } = req.body;
+  const {
+    channelId,
+    title,
+    description,
+    url,
+    Image,
+    buttonDetails,
+    tagEveryone,
+  } = req.body;
+
+  if (!channelId) {
+    return res.status(400).send("Channel ID is required");
+  }
 
   console.log(`Received request to send embed to channel: ${channelId}`);
 
@@ -43,8 +55,14 @@ router.post("/post", async (req, res) => {
   if (!channel) {
     return res.status(404).send("Channel not found");
   } else {
+    const messageContent = tagEveryone ? "@everyone" : "";
+
     await channel
-      .send({ embeds: [exampleEmbed], components: [buttons] })
+      .send({
+        content: messageContent,
+        embeds: [exampleEmbed],
+        components: [buttons],
+      })
 
       .then(() => {
         res.status(200).json({ message: "Embed sent successfully" });
