@@ -7,6 +7,7 @@ export async function createDiscordServer({
   guildIcon,
   memberCount,
   channelId,
+  active,
 }) {
   try {
     const response = await prisma.Guild.upsert({
@@ -20,6 +21,7 @@ export async function createDiscordServer({
         serverIcon: guildIcon,
         memberCount: memberCount,
         channelId: channelId,
+        active: active,
       },
       create: {
         serverId: guildId,
@@ -33,6 +35,23 @@ export async function createDiscordServer({
     return response;
   } catch (err) {
     console.error("Error creating server", err);
+    throw err;
+  }
+}
+
+export async function guildDelete({ guildId }) {
+  try {
+    const response = await prisma.Guild.update({
+      where: {
+        serverId: guildId,
+      },
+      data: {
+        active: false,
+      },
+    });
+    return response;
+  } catch (err) {
+    console.error("Error deleting server", err);
     throw err;
   }
 }
