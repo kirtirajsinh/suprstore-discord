@@ -11,7 +11,7 @@ import dotenv from "dotenv";
 import express from "express";
 import routes from "./routes.js";
 import { setupCommands } from "./commands.js";
-import { createDiscordServer } from "./utils/db.js";
+import { createDiscordServer, guildDelete } from "./utils/db.js";
 
 export const app = express();
 
@@ -33,9 +33,30 @@ client.login(process.env.DISCORD_BOT_TOKEN);
 
 client.on("ready", () => {
   console.log(`Logged in as ${client.user.tag}!`);
+  client.guilds.cache.forEach((guild) => {
+    console.log(`- ${guild.name} (ID: ${guild.id})`);
+  });
 });
 
 setupCommands();
+
+client.on("guildCreate", async (guild) => {
+  // Save guild info to database
+  await createDiscordServer({
+    guildId: guild.id,
+    guildName: guild.name,
+    guildDescription: guild.description,
+    guildIcon: guild.icon,
+    memberCount: guild.memberCount,
+    active: false,
+  });
+
+  console.log(
+    `Joined a new guild: ${guild.name} (ID: ${guild.id}) (ICON: ${guild.icon}) (ID: ${guild.memberCount})`
+  );
+  // Optionally, send a welcome message to the guild's default channel
+  // Note: The default channel is not always accessible; consider a more specific channel ID if known
+});
 
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
@@ -64,6 +85,7 @@ client.on("interactionCreate", async (interaction) => {
       guildIcon: serverIcon,
       memberCount: memberCount,
       channelId: channelId,
+      active: true,
     });
 
     console.log("Server created in the database", server);
@@ -76,6 +98,8 @@ client.on("interactionCreate", async (interaction) => {
 
 client.on("guildDelete", async (guild) => {
   console.log(`SuprStore got Kicked from the : ${guild.name}`);
+
+  await guildDelete({ guildId: guild.id });
 });
 
 app.get("/", (req, res) => {

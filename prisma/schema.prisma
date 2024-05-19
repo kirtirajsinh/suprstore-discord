@@ -15,6 +15,7 @@ model Guild {
   channelId   String?       @unique
   createdAt   DateTime      @default(now())
   serverIcon  String?
+  active      Boolean       @default(false)
   Tag         Tag[]
   channels    channels[]
   discordtags discordtags[]
