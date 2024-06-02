@@ -1,17 +1,27 @@
 import {
   Client,
   GatewayIntentBits,
-  EmbedBuilder,
-  Events,
   Collection,
+  StringSelectMenuOptionBuilder,
+  ActionRowBuilder,
+  UserSelectMenuBuilder,
+  StringSelectMenuBuilder,
+  time,
+  Component,
+  ComponentType,
+  EmbedBuilder,
 } from "discord.js";
-import { ReacordDiscordJs } from "reacord";
 
 import dotenv from "dotenv";
 import express from "express";
 import routes from "./routes.js";
 import { setupCommands } from "./commands.js";
-import { createDiscordServer, guildDelete } from "./utils/db.js";
+import {
+  createDiscordServer,
+  getTags,
+  guildDelete,
+  updateGuildTag,
+} from "./utils/db.js";
 
 export const app = express();
 
@@ -77,7 +87,7 @@ client.on("interactionCreate", async (interaction) => {
     const serverDescription = guild.description || "No description available";
     const serverIcon = guild.iconURL(); // Get the server's profile picture
     const memberCount = guild.memberCount; // Get the number of members in the server
-
+    const channel = await client.channels.fetch(channelId);
     const server = await createDiscordServer({
       guildId: serverId,
       guildName: serverName,
@@ -90,10 +100,80 @@ client.on("interactionCreate", async (interaction) => {
 
     console.log("Server created in the database", server);
 
-    interaction.reply(
-      `Server ID: ${serverId}\nServer Name: ${serverName}\nServer Description: ${serverDescription}\nServer Icon: ${serverIcon}\nMember Count: ${memberCount}\nYour Profile: ${profile} \n Channel ID: ${channelId}`
-    );
+    const tags = await getTags();
+    console.log("Tags fetched from the database", tags);
+
+    const welcomeEmbed = new EmbedBuilder()
+      .setTitle("SuprStore")
+      .setDescription("Welcome to SuprStore! 🎊")
+      .setColor("#0099ff")
+      .setThumbnail(serverIcon);
+
+    const selectMenu = new StringSelectMenuBuilder()
+      .setCustomId(interaction.id)
+      .setPlaceholder("Select Tags ")
+      .setMinValues(1)
+      .setMaxValues(6)
+      .addOptions(
+        tags.map((tag) =>
+          new StringSelectMenuOptionBuilder()
+            .setValue(tag.tagId)
+            .setLabel(tag.name)
+        )
+      );
+    await channel.send({
+      content: "Welcome to SuprStore! 🎊",
+      embeds: [welcomeEmbed],
+    });
+
+    const actionRow = new ActionRowBuilder().addComponents(selectMenu);
+    await interaction.reply({
+      content:
+        "Select Tags that describes your Server and that your community would find helpful to see products for!",
+      components: [actionRow],
+    });
+    const collector = selectReply.createMessageComponentCollector({
+      componentType: ComponentType.StringSelect,
+      filter: (i) =>
+        i.user.id === interaction.user.id && i.customId === interaction.id,
+      time: 60_000,
+    });
+
+    collector.on("collect", async (interaction) => {
+      if (!interaction.values.length) {
+        interaction.reply({
+          content: "Please select atleast one starter",
+          ephemeral: true,
+        });
+      } else {
+        const response = await updateGuildTag(serverId, interaction.values);
+        console.log("Tag updated in the database", response);
+        interaction.reply({
+          content: `Your Tags have been Selected. If you want to make changes please use the command /Suprstore-start and select the tags again!`,
+          ephemeral: true,
+        });
+      }
+    });
   }
+});
+
+client.on("guildUpdate", async (oldGuild, newGuild) => {
+  console.log(
+    `SuprStore got updated in the : ${oldGuild.name} (ID: ${oldGuild.id})`
+  );
+  // Update the server info in the database
+  await createDiscordServer({
+    guildId: newGuild.id,
+    guildName: newGuild.name,
+    guildDescription: newGuild.description,
+    guildIcon: newGuild.icon,
+    memberCount: newGuild.memberCount,
+  });
+  console.log("Guild Updated. Therefore Updated the Guild in the Database.");
+  // Optionally, send a welcome message to the guild's default channel
+  // Note: The default channel is not always accessible; consider a more specific channel ID if known
+  // Optionally, send a welcome message to the guild's default channel
+  // Note: The default channel is not always accessible; consider a more specific channel ID if known
 });
 
 client.on("guildDelete", async (guild) => {
