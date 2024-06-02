@@ -8,25 +8,23 @@ datasource db {
 }
 
 model Guild {
-  serverId    String        @id @unique
+  serverId    String     @id @unique
   name        String
   description String?
   memberCount Int?
-  channelId   String?       @unique
-  createdAt   DateTime      @default(now())
+  channelId   String?    @unique
+  createdAt   DateTime   @default(now())
   serverIcon  String?
-  active      Boolean       @default(false)
-  Tag         Tag[]
+  active      Boolean    @default(false)
   channels    channels[]
-  discordtags discordtags[]
+  Tag         Tag[]      @relation("GuildToTag")
 }
 
 model Tag {
-  tagId          String        @id
-  name           String
-  serverServerId String?
-  Guild          Guild?        @relation(fields: [serverServerId], references: [serverId])
-  discordtags    discordtags[]
+  tagId String  @id
+  name  String
+  Guild Guild[] @relation("GuildToTag")
+  Post  Post[]  @relation("PostToTag")
 }
 
 model accounts {
@@ -55,16 +53,6 @@ model channels {
   Guild       Guild   @relation(fields: [serverId], references: [serverId], onDelete: Cascade)
 }
 
-model discordtags {
-  id       String @id
-  serverId String
-  tagId    String
-  Guild    Guild  @relation(fields: [serverId], references: [serverId], onDelete: Cascade)
-  Tag      Tag    @relation(fields: [tagId], references: [tagId], onDelete: Cascade)
-
-  @@unique([serverId, tagId])
-}
-
 model sessions {
   id            String   @id
   session_token String   @unique
@@ -89,4 +77,15 @@ model verificationtokens {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model Post {
+  id          String   @id
+  title       String
+  description String
+  productUrl  String?
+  image       String?
+  channelId   String[]
+  createdAt   DateTime @default(now())
+  Tag         Tag[]    @relation("PostToTag")
 }
