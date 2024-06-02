@@ -55,3 +55,32 @@ export async function guildDelete({ guildId }) {
     throw err;
   }
 }
+
+export async function getTags() {
+  try {
+    const response = await prisma.Tag.findMany();
+    return response;
+  } catch (err) {
+    console.error("Error getting tags", err);
+    throw err;
+  }
+}
+
+export async function updateGuildTag(guildId, tagIds) {
+  try {
+    const response = await prisma.guild.update({
+      where: {
+        serverId: guildId,
+      },
+      data: {
+        Tag: {
+          set: tagIds.map((tagId) => ({ tagId })),
+        },
+      },
+    });
+    return response;
+  } catch (err) {
+    console.error("Error updating tags", err);
+    throw err;
+  }
+}
