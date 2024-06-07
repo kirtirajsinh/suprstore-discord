@@ -127,11 +127,12 @@ client.on("interactionCreate", async (interaction) => {
     });
 
     const actionRow = new ActionRowBuilder().addComponents(selectMenu);
-    await interaction.reply({
+    const selectReply = await interaction.reply({
       content:
         "Select Tags that describes your Server and that your community would find helpful to see products for!",
       components: [actionRow],
     });
+
     const collector = selectReply.createMessageComponentCollector({
       componentType: ComponentType.StringSelect,
       filter: (i) =>
