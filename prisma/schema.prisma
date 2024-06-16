@@ -3,21 +3,22 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Guild {
-  serverId    String     @id @unique
+  serverId    String    @id @unique
   name        String
+  serverIcon  String?
   description String?
   memberCount Int?
-  channelId   String?    @unique
-  createdAt   DateTime   @default(now())
-  serverIcon  String?
-  active      Boolean    @default(false)
-  channels    channels[]
-  Tag         Tag[]      @relation("GuildToTag")
+  channelId   String?   @unique
+  createdAt   DateTime  @default(now())
+  active      Boolean   @default(false)
+  Channel     Channel[]
+  Tag         Tag[]     @relation("GuildToTag")
 }
 
 model Tag {
@@ -25,58 +26,6 @@ model Tag {
   name  String
   Guild Guild[] @relation("GuildToTag")
   Post  Post[]  @relation("PostToTag")
-}
-
-model accounts {
-  id                  String  @id
-  user_id             String
-  type                String
-  provider            String
-  provider_account_id String
-  refresh_token       String?
-  access_token        String?
-  expires_at          Int?
-  token_type          String?
-  scope               String?
-  id_token            String?
-  session_state       String?
-  users               users   @relation(fields: [user_id], references: [id], onDelete: Cascade)
-
-  @@unique([provider, provider_account_id])
-}
-
-model channels {
-  id          String  @id
-  name        String
-  description String?
-  serverId    String
-  Guild       Guild   @relation(fields: [serverId], references: [serverId], onDelete: Cascade)
-}
-
-model sessions {
-  id            String   @id
-  session_token String   @unique
-  user_id       String
-  expires       DateTime
-  users         users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
-}
-
-model users {
-  id             String     @id
-  name           String?
-  email          String?    @unique
-  email_verified DateTime?
-  image          String?
-  accounts       accounts[]
-  sessions       sessions[]
-}
-
-model verificationtokens {
-  identifier String
-  token      String
-  expires    DateTime
-
-  @@unique([identifier, token])
 }
 
 model Post {
@@ -87,5 +36,60 @@ model Post {
   image       String?
   channelId   String[]
   createdAt   DateTime @default(now())
+  authorId    String
+  User        User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
   Tag         Tag[]    @relation("PostToTag")
+}
+
+model Account {
+  id                String  @id
+  type              String
+  provider          String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  providerAccountId String
+  userId            String
+  User              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Channel {
+  id          String  @id
+  name        String
+  description String?
+  serverId    String
+  Guild       Guild   @relation(fields: [serverId], references: [serverId], onDelete: Cascade)
+}
+
+model Session {
+  id           String   @id
+  expires      DateTime
+  sessionToken String   @unique
+  userId       String
+  User         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  Account       Account[]
+  Post          Post[]
+  Session       Session[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
 }
