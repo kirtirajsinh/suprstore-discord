@@ -15,15 +15,7 @@ router.get("/yo", (req, res) => {
 });
 
 router.post("/post", async (req, res) => {
-  const {
-    channelId,
-    title,
-    description,
-    url,
-    Image,
-    buttonDetails,
-    tagEveryone,
-  } = req.body;
+  const { channelId, title, description, url, Image, tagEveryone } = req.body;
 
   if (!channelId) {
     return res.status(400).send("Channel ID is required");
@@ -44,33 +36,41 @@ router.post("/post", async (req, res) => {
 
   const buttons = new ActionRowBuilder();
 
-  await buttonDetails.map((button) => {
-    const buttonComponent = new ButtonBuilder()
-      .setLabel(button.label ?? "Link")
-      .setURL(button.url)
-      .setStyle(ButtonStyle.Link);
-    buttons.addComponents(buttonComponent);
-  });
+  // await buttonDetails?.map((button) => {
+  const buttonComponent = new ButtonBuilder()
+    .setLabel("Link")
+    .setURL(url)
+    .setStyle(ButtonStyle.Link);
+  buttons.addComponents(buttonComponent);
+  // });
 
   if (!channel) {
     return res.status(404).send("Channel not found");
   } else {
     const messageContent = tagEveryone ? "@everyone" : "";
 
-    await channel
-      .send({
-        content: messageContent,
+    // await channel
+    //   .send({
+    //     content: messageContent,
+    //     embeds: [exampleEmbed],
+    //     components: [buttons],
+    //   })
+    channelId.map((channelId) => {
+      const channel = client.channels.cache.get(channelId);
+      console.log(`Sending embed to channel: ${channel}`);
+      channel.send({
         embeds: [exampleEmbed],
         components: [buttons],
-      })
-
-      .then(() => {
-        res.status(200).json({ message: "Embed sent successfully" });
-      })
-      .catch((error) => {
-        console.error("Error sending embed:", error);
-        res.status(500).json({ error: "Internal server error" });
       });
+    });
+
+    // .then(() => {
+    //   res.status(200).json({ message: "Embed sent successfully" });
+    // })
+    // .catch((error) => {
+    //   console.error("Error sending embed:", error);
+    //   res.status(500).json({ error: "Internal server error" });
+    // });
   }
 });
 
